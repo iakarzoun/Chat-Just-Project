@@ -20,7 +20,7 @@ def create_database():
 
     print(documents[0].page_content[:500]) # this line just to test the Arabic text
     
-    print("✂️ 2. Chopping the text into small chunks...")
+    print(" 2. Chopping the text into small chunks...")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500, # 500 characters per chunk
         chunk_overlap=50  # Overlap slightly so sentences don't break in half
