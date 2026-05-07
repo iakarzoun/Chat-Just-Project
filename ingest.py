@@ -4,7 +4,7 @@ from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
-
+#helllooooooo just for chicking
 # 1. Load the secret API key
 load_dotenv()
 
@@ -26,7 +26,7 @@ def create_database():
         chunk_overlap=50  # Overlap slightly so sentences don't break in half
     )
     chunks = text_splitter.split_documents(documents)
-    print(f"   Created {len(chunks)} chunks of text.")
+    print(f"Created {len(chunks)} chunks of text.")
 
     print("3. Converting text to vectors and saving to ChromaDB...")
     # This uses OpenAI to turn the text into math
