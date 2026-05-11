@@ -1,45 +1,58 @@
 import os
 from dotenv import load_dotenv
-from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
-#helllooooooo just for chicking
-# 1. Load the secret API key
+from langchain_huggingface import HuggingFaceEmbeddings
+
 load_dotenv()
 
-# 2. Tell the system where the PDF is
-# CHANGE 'handbook.pdf' to the actual name of your file!
-PDF_PATH = "docs/calendar_seconed_semester_2025-2026.pdf" 
-DB_DIR = "chroma_db" # This is the folder where the database will be saved
+DOCS_DIR = "docs" 
+DB_DIR = "chroma_db"
 
 def create_database():
-    print("1. Loading the PDF...")
-    loader = PyMuPDFLoader(PDF_PATH)
-    documents = loader.load()
-
-    print(documents[0].page_content[:500]) # this line just to test the Arabic text
+    print("1. Scanning ALL folders and sub-folders for PDFs...")
+    all_documents = [] 
     
-    print(" 2. Chopping the text into small chunks...")
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500, # 500 characters per chunk
-        chunk_overlap=50  # Overlap slightly so sentences don't break in half
+    # os.walk() acts like a robot digging through every nested folder
+    for folder_path, subfolders, files in os.walk(DOCS_DIR):
+        for filename in files:
+            if filename.endswith(".pdf"):
+                # Glue the deep folder path to the file name
+                pdf_path = os.path.join(folder_path, filename)
+                print(f"   -> Reading: {filename} (found in {folder_path})")
+                
+                # Try to read it, but don't crash if one file is broken
+                try:
+                    loader = PyMuPDFLoader(pdf_path)
+                    documents = loader.load()
+                    all_documents.extend(documents)
+                except Exception as e:
+                    print(f"      Skipping {filename} due to an error: {e}")
+            
+    # Safety check
+    if len(all_documents) == 0:
+        print("Error: No PDFs found anywhere in the docs folders!")
+        return
+    
+    print(f"2. Chopping all {len(all_documents)} pages of text into small chunks...")
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    chunks = text_splitter.split_documents(all_documents)
+    print(f"   Created {len(chunks)} chunks of text from all your PDFs.")
+
+    print("3. Saving everything to the Database...")
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     )
-    chunks = text_splitter.split_documents(documents)
-    print(f"Created {len(chunks)} chunks of text.")
-
-    print("3. Converting text to vectors and saving to ChromaDB...")
-    # This uses OpenAI to turn the text into math
-    embeddings = OpenAIEmbeddings()
     
-    # This creates the actual database folder on your computer
+    # Save it!
     Chroma.from_documents(
         documents=chunks, 
         embedding=embeddings, 
         persist_directory=DB_DIR
     )
     
-    print("Success! The knowledge base has been created.")
+    print("✅ Success! The free database is ready and contains ALL your PDFs.")
 
 if __name__ == "__main__":
     create_database()
