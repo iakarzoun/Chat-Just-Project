@@ -72,6 +72,7 @@ def process_query():
         return jsonify({"answer": result.content})
         
     except Exception as e:
+        print(f"\n❌ CRITICAL CRASH: {str(e)}\n")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
