@@ -10,7 +10,7 @@ from duckduckgo_search import DDGS
 load_dotenv()
 app = Flask(__name__)
 
-print("🧠 Booting up the Hybrid AI Brain... Please wait.")
+print("Booting up the Hybrid AI Brain... Please wait.")
 
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
@@ -23,7 +23,7 @@ llm = ChatGoogleGenerativeAI(
     google_api_key=os.getenv("GEMINI_API_KEY")
 )
 
-print("✅ Hybrid Brain Loaded and Ready for Students!")
+print("Hybrid Brain Loaded and Ready for Students!")
 
 @app.route('/', methods=['GET'])
 def health_check():
@@ -38,11 +38,11 @@ def process_query():
     student_question = data['question']
     
     try:
-        print(f"📚 Searching PDFs for: {student_question}")
+        print(f"Searching PDFs for: {student_question}")
         matching_docs = vectorstore.similarity_search(student_question, k=3)
         pdf_context = "\n\n".join([doc.page_content for doc in matching_docs])
         
-        print("🌐 Searching the JUST website...")
+        print("Searching the JUST website...")
         web_context = ""
         try:
             with DDGS() as ddgs:
@@ -51,17 +51,17 @@ def process_query():
                 for r in results:
                     web_context += r['body'] + "\n"
         except Exception as e:
-            print(f"⚠️ Web search skipped (Internet issue): {e}")
+            print(f"Web search skipped (Internet issue): {e}")
 
         prompt = f"""
         You are a helpful university assistant for Jordan University of Science and Technology. 
         Answer the student's question using the information from the Official Handbooks and the Live Website below.
         Reply in the same language as the student's question.
 
-        📚 Official Handbook Information (from PDFs):
+        Official Handbook Information (from PDFs):
         {pdf_context}
 
-        🌐 Live Website Information (from just.edu.jo):
+        Live Website Information (from just.edu.jo):
         {web_context}
 
         Student Question: 

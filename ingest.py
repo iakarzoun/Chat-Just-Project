@@ -11,7 +11,7 @@ DOCS_DIR = "docs"
 DB_DIR = "chroma_db"
 
 def create_database():
-    print("📚 1. Scanning ALL folders and sub-folders for PDFs...")
+    print("1. Scanning ALL folders and sub-folders for PDFs...")
     all_documents = [] 
     
     for folder_path, subfolders, files in os.walk(DOCS_DIR):
@@ -24,18 +24,18 @@ def create_database():
                     documents = loader.load()
                     all_documents.extend(documents)
                 except Exception as e:
-                    print(f"      ❌ Skipping {filename} due to an error: {e}")
+                    print(f"      Skipping {filename} due to an error: {e}")
             
     if len(all_documents) == 0:
-        print("❌ Error: No PDFs found anywhere in the docs folders!")
+        print("Error: No PDFs found anywhere in the docs folders!")
         return
     
-    print(f"✂️ 2. Chopping all {len(all_documents)} pages of text into small chunks...")
+    print(f"2. Chopping all {len(all_documents)} pages of text into small chunks...")
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     chunks = text_splitter.split_documents(all_documents)
     print(f"   Created {len(chunks)} chunks of text from all your PDFs.")
 
-    print("🧠 3. Saving everything to the Database...")
+    print("3. Saving everything to the Database...")
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     )
@@ -46,7 +46,7 @@ def create_database():
         persist_directory=DB_DIR
     )
     
-    print("✅ Success! The free database is ready and contains ALL your PDFs.")
+    print("Success! The free database is ready and contains ALL your PDFs.")
 
 if __name__ == "__main__":
     create_database()
