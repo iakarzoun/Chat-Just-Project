@@ -64,6 +64,7 @@ def process_query():
         prompt = f"""
         You are a helpful university assistant for Jordan University of Science and Technology. 
         Answer the student's question using the information from the Official Handbooks and the Live Website below.
+        And if there is a question that you don't know the unswer for it, tell them that and recommend something to help them finding the unswer.
         Reply in the same language as the student's question.
 
         Previous Conversation Context:
@@ -85,6 +86,32 @@ def process_query():
     except Exception as e:
         print(f"\n❌ CRITICAL CRASH: {str(e)}\n")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/admin/documents', methods=['GET'])
+def list_documents():
+    # 1. The Security Check (The Bouncer)
+    provided_key = request.headers.get('X-Admin-Key')
+    actual_admin_key = os.getenv("ADMIN_SECRET_KEY")
+    
+    # If they didn't send a key, or sent the wrong one, kick them out!
+    if not provided_key or provided_key != actual_admin_key:
+        return jsonify({"error": "Unauthorized. Admin access only."}), 403 
+
+    # 2. If they pass the check, gather the files
+    docs_folder = "docs" 
+    
+    try:
+        pdf_files = []
+        for folder_path, subfolders, files in os.walk(docs_folder):
+            for filename in files:
+                if filename.endswith(".pdf"):
+                    pdf_files.append(filename)
+                    
+        return jsonify({"documents": pdf_files}), 200
+        
+    except Exception as e:
+        print(f"\n❌ Error reading documents: {str(e)}\n")
+        return jsonify({"error": "Could not load documents."}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=True, port=5000)
