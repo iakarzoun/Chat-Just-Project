@@ -36,6 +36,8 @@ def process_query():
          return jsonify({"error": "No question provided"}), 400
          
     student_question = data['question']
+    # 1. Catch the history list (or use an empty list if it's the very first question)
+    chat_history = data.get('history', []) 
     
     try:
         print(f"Searching PDFs for: {student_question}")
@@ -53,10 +55,20 @@ def process_query():
         except Exception as e:
             print(f"Web search skipped (Internet issue): {e}")
 
+        # 2. Format the history into a readable transcript for Gemini
+        transcript = ""
+        for msg in chat_history:
+            transcript += f"Student: {msg['user']}\nAssistant: {msg['ai']}\n"
+
+        # 3. Inject the transcript into the final prompt
         prompt = f"""
         You are a helpful university assistant for Jordan University of Science and Technology. 
         Answer the student's question using the information from the Official Handbooks and the Live Website below.
+        And if there is a question that you don't know the unswer for it, tell them that and recommend something to help them finding the unswer.
         Reply in the same language as the student's question.
+
+        Previous Conversation Context:
+        {transcript}
 
         Official Handbook Information (from PDFs):
         {pdf_context}
@@ -64,7 +76,7 @@ def process_query():
         Live Website Information (from just.edu.jo):
         {web_context}
 
-        Student Question: 
+        Student's New Question: 
         {student_question}
         """
         
@@ -72,7 +84,34 @@ def process_query():
         return jsonify({"answer": result.content})
         
     except Exception as e:
+        print(f"\n CRITICAL CRASH: {str(e)}\n")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/admin/documents', methods=['GET'])
+def list_documents():
+    # 1. The Security Check (The Bouncer)
+    provided_key = request.headers.get('X-Admin-Key')
+    actual_admin_key = os.getenv("ADMIN_SECRET_KEY")
+    
+    # If they didn't send a key, or sent the wrong one, kick them out!
+    if not provided_key or provided_key != actual_admin_key:
+        return jsonify({"error": "Unauthorized. Admin access only."}), 403 
+
+    # 2. If they pass the check, gather the files
+    docs_folder = "docs" 
+    
+    try:
+        pdf_files = []
+        for folder_path, subfolders, files in os.walk(docs_folder):
+            for filename in files:
+                if filename.endswith(".pdf"):
+                    pdf_files.append(filename)
+                    
+        return jsonify({"documents": pdf_files}), 200
+        
+    except Exception as e:
+        print(f"\n❌ Error reading documents: {str(e)}\n")
+        return jsonify({"error": "Could not load documents."}), 500
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(host='0.0.0.0',debug=True, port=5000)

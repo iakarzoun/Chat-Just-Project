@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Miscellaneous
 *.class
 *.log
@@ -44,7 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-=======
+
 chroma_db/
 venv/
->>>>>>> 71a2515c97067c36ac65a3d062cfc652625d9aba
+.env
