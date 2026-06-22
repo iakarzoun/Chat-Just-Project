@@ -113,5 +113,33 @@ def list_documents():
         print(f"\n❌ Error reading documents: {str(e)}\n")
         return jsonify({"error": "Could not load documents."}), 500
 
+@app.route('/admin/documents/<filename>', methods=['DELETE'])
+def delete_document(filename):
+    # 1. The Security Check
+    provided_key = request.headers.get('X-Admin-Key')
+    actual_admin_key = os.getenv("ADMIN_SECRET_KEY")
+    
+    if not provided_key or provided_key != actual_admin_key:
+        return jsonify({"error": "Unauthorized. Admin access only."}), 403
+
+    # 2. Hunt for the file inside the docs folder (and sub-folders)
+    docs_folder = "docs"
+    file_to_delete = None
+    
+    for folder_path, subfolders, files in os.walk(docs_folder):
+        if filename in files:
+            file_to_delete = os.path.join(folder_path, filename)
+            break # Stop searching once we find it!
+
+    # 3. Delete the file
+    if file_to_delete and os.path.exists(file_to_delete):
+        try:
+            os.remove(file_to_delete)
+            return jsonify({"message": f"Successfully deleted {filename}"}), 200
+        except Exception as e:
+            return jsonify({"error": f"Failed to delete file: {str(e)}"}), 500
+    else:
+        return jsonify({"error": "File not found on the server."}), 404
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=True, port=5000)
