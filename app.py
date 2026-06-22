@@ -60,8 +60,12 @@ def process_query():
         # 2. Format the history into a readable transcript for Gemini
         transcript = ""
         for msg in chat_history:
-            transcript += f"Student: {msg['user']}\nAssistant: {msg['ai']}\n"
-
+            # .get() prevents crashes. It looks for 'user', but if it can't find it, 
+            # it safely falls back to looking for 'question', or just prints "Student"
+            student_text = msg.get('user', msg.get('question', 'Student'))
+            ai_text = msg.get('ai', msg.get('answer', 'Assistant'))
+            
+            transcript += f"Student: {student_text}\nAssistant: {ai_text}\n"
         # 3. Inject the transcript into the final prompt
         prompt = f"""
         You are a helpful university assistant for Jordan University of Science and Technology. 
