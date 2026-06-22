@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import os
 
+from langchain_community.document_loaders import PyMuPDFLoader 
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -112,6 +114,49 @@ def list_documents():
     except Exception as e:
         print(f"\n❌ Error reading documents: {str(e)}\n")
         return jsonify({"error": "Could not load documents."}), 500
+
+@app.route('/admin/documents', methods=['POST'])
+def upload_document():
+    # 1. The Security Check
+    provided_key = request.headers.get('X-Admin-Key')
+    if not provided_key or provided_key != os.getenv("ADMIN_SECRET_KEY"):
+        return jsonify({"error": "Unauthorized."}), 403
+
+    # 2. Catch the file sent by Flutter
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    # 3. Save it to the hard drive (The Shelf)
+    if file and file.filename.endswith('.pdf'):
+        file_path = os.path.join("docs", file.filename)
+        file.save(file_path)
+        
+        try:
+            print(f"New file uploaded: {file.filename}. Injecting into AI Brain...")
+            
+            # 4. Read the new PDF
+            loader = PyMuPDFLoader(file_path)
+            new_docs = loader.load()
+            
+            # 5. Chop it into chunks (using the exact same rules as ingest.py)
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+            new_chunks = text_splitter.split_documents(new_docs)
+            
+            # 6. Inject the numbers directly into the live database!
+            vectorstore.add_documents(new_chunks)
+            
+            print(f"Success! {file.filename} is now permanently memorized.")
+            return jsonify({"message": f"Successfully uploaded and memorized {file.filename}!"}), 200
+            
+        except Exception as e:
+            print(f"Error processing PDF for AI: {e}")
+            return jsonify({"error": f"Saved the file, but failed to process AI memory: {str(e)}"}), 500
+            
+    return jsonify({"error": "Only PDF files are allowed."}), 400
 
 @app.route('/admin/documents/<filename>', methods=['DELETE'])
 def delete_document(filename):
